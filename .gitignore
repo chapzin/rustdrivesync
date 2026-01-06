@@ -1,0 +1,29 @@
+# Build artifacts
+/target
+Cargo.lock
+
+# Credentials e tokens (NUNCA commitar!)
+credentials.json
+token.json
+*.pem
+*.key
+
+# Config local
+config.toml
+state.json
+
+# Logs
+*.log
+logs/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Backup files
+*.bak
+*.backup

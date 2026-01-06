@@ -1,0 +1,169 @@
+# config.toml - Configuração completa do RustDriveSync
+
+#===============================================================================
+# CONFIGURAÇÕES GERAIS
+#===============================================================================
+[general]
+# Nível de log: trace, debug, info, warn, error
+log_level = "info"
+
+# Arquivo de log (deixe vazio para apenas stdout)
+# log_file = "./logs/rustdrivesync.log"
+
+# Formato do log: "text" ou "json"
+log_format = "text"
+
+#===============================================================================
+# PASTA DE ORIGEM
+#===============================================================================
+[source]
+# Caminho absoluto da pasta a sincronizar
+path = "/home/usuario/documentos"
+
+# Incluir subpastas recursivamente
+recursive = true
+
+# Ignorar arquivos ocultos (começam com .)
+ignore_hidden = true
+
+# Seguir links simbólicos
+follow_symlinks = false
+
+# Padrões de arquivos/pastas a ignorar (glob patterns)
+ignore_patterns = [
+    # Arquivos temporários
+    "*.tmp",
+    "*.temp",
+    "*.swp",
+    "*~",
+
+    # Logs
+    "*.log",
+
+    # Build artifacts
+    "target/",
+    "node_modules/",
+    "__pycache__/",
+    "*.pyc",
+    ".venv/",
+
+    # Version control
+    ".git/",
+    ".svn/",
+    ".hg/",
+
+    # IDE/Editor
+    ".idea/",
+    ".vscode/",
+    "*.sublime-*",
+
+    # OS files
+    ".DS_Store",
+    "Thumbs.db",
+    "desktop.ini",
+]
+
+#===============================================================================
+# GOOGLE DRIVE
+#===============================================================================
+[google_drive]
+# Arquivo com credenciais OAuth2 (baixado do Google Console)
+credentials_file = "./credentials.json"
+
+# Arquivo onde tokens serão salvos
+token_file = "./token.json"
+
+# ID da pasta de destino no Google Drive (encontre na URL do Drive)
+# Exemplo: https://drive.google.com/drive/folders/1ABC123xyz
+target_folder_id = "1ABC123xyz"
+
+# OU nome da pasta (será criada na raiz se não existir)
+# target_folder_name = "Backup-Documentos"
+
+# Escopos OAuth2 necessários
+scopes = [
+    "https://www.googleapis.com/auth/drive.file"
+]
+
+#===============================================================================
+# SINCRONIZAÇÃO
+#===============================================================================
+[sync]
+# Modo de operação: "once" (única vez) ou "watch" (monitoramento contínuo)
+mode = "once"
+
+# Intervalo entre verificações em modo watch (segundos)
+interval_seconds = 300
+
+# Como resolver conflitos quando arquivo já existe no Drive
+# - "overwrite": substitui o arquivo no Drive
+# - "skip": mantém o arquivo do Drive, não faz upload
+# - "rename": renomeia o arquivo local antes do upload (arquivo_1.txt)
+conflict_resolution = "overwrite"
+
+# Tamanho máximo de arquivo para upload (MB)
+max_file_size_mb = 100
+
+# Tamanho do chunk para upload resumível (MB)
+chunk_size_mb = 5
+
+# Número máximo de uploads simultâneos
+max_concurrent_uploads = 4
+
+# Verificar integridade após upload (compara MD5)
+verify_upload = true
+
+# Manter estrutura de pastas no destino
+preserve_folder_structure = true
+
+# Deletar arquivos no Drive quando deletados localmente
+# CUIDADO: pode causar perda de dados!
+delete_remote_on_local_delete = false
+
+#===============================================================================
+# RETRY E RESILIÊNCIA
+#===============================================================================
+[retry]
+# Número máximo de tentativas por arquivo
+max_attempts = 3
+
+# Delay inicial entre tentativas (segundos)
+initial_delay_seconds = 1
+
+# Fator de multiplicação do delay (exponential backoff)
+backoff_multiplier = 2.0
+
+# Delay máximo entre tentativas (segundos)
+max_delay_seconds = 60
+
+#===============================================================================
+# NOTIFICAÇÕES (Opcional)
+#===============================================================================
+[notifications]
+# Habilitar notificações
+enabled = false
+
+# Notificar quando sync completar com sucesso
+on_complete = true
+
+# Notificar em caso de erro
+on_error = true
+
+# Tipo de notificação: "desktop" ou "webhook"
+notification_type = "desktop"
+
+# URL do webhook (se type = "webhook")
+# webhook_url = "https://hooks.slack.com/services/..."
+
+#===============================================================================
+# ESTADO E CACHE
+#===============================================================================
+[state]
+# Arquivo de estado (rastreia arquivos sincronizados)
+state_file = "./state.json"
+
+# Salvar estado a cada N arquivos sincronizados
+save_interval = 10
+
+# Limpar estado de arquivos deletados após N dias
+cleanup_after_days = 30
