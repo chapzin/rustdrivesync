@@ -1,13 +1,25 @@
 [package]
 name = "rustdrivesync"
-version = "0.1.0"
+version = "1.0.0"
 edition = "2021"
 authors = ["RustDriveSync Contributors"]
-description = "Sincronização unidirecional de arquivos com Google Drive"
+description = "Production-ready CLI tool for one-way file synchronization with Google Drive. Features: dependency injection, rate limiting, retry with backoff, parallel uploads, and comprehensive documentation."
 license = "MIT"
-repository = "https://github.com/usuario/rustdrivesync"
-keywords = ["google-drive", "sync", "backup", "cli"]
-categories = ["command-line-utilities"]
+repository = "https://github.com/chapzin/rustdrivesync"
+homepage = "https://github.com/chapzin/rustdrivesync"
+documentation = "https://docs.rs/rustdrivesync"
+readme = "README.md"
+keywords = ["google-drive", "sync", "backup", "cli", "oauth2"]
+categories = ["command-line-utilities", "filesystem", "asynchronous"]
+rust-version = "1.70"
+exclude = [
+    ".github/",
+    "docs/",
+    "tests/",
+    ".gitignore",
+    "ARCHITECTURE_IMPROVEMENTS.md",
+    "IMPLEMENTACOES_V1.md",
+]
 
 [dependencies]
 # CLI
