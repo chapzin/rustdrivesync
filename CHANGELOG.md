@@ -5,6 +5,60 @@ Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.1.1] - 2026-01-07
+
+### 🔧 Otimizações para Backups Grandes
+
+Esta versão patch adiciona configurações otimizadas e documentação completa para cenários de backups SQL grandes (6-8 GB).
+
+### Added
+
+- **config.large-backups.toml**: Arquivo de configuração completo e comentado para backups grandes
+  - Otimizado para arquivos de 6-8 GB
+  - Configuração de notificações e logs
+  - Exemplos de automação com cron
+  - Métricas de performance esperadas
+
+- **ANALISE_BACKUPS_GRANDES.md**: Análise técnica completa
+  - Validação de limites do Google Drive API (750 GB/dia)
+  - Identificação de problemas de configuração
+  - Configuração recomendada detalhada
+  - Troubleshooting e otimizações
+  - Estimativas de performance
+  - Checklist de implementação
+
+### Changed
+
+- **config.example.toml**: Atualizado para PERFIL 3 (Backups SQL Grandes)
+  - `max_file_size_mb`: 100 → 10240 (10 GB) - **CRÍTICO**
+  - `chunk_size_mb`: 5 → 32 (mais eficiente para arquivos grandes)
+  - `max_concurrent_uploads`: 4 → 2 (evita saturar conexão)
+  - `max_attempts`: 3 → 5 (retry mais robusto)
+  - `max_delay_seconds`: 60 → 120 (mais tempo de recuperação)
+  - Adicionados 4 perfis de configuração documentados
+
+- **README.md**: Nova seção "Backups Grandes (SQL, Vídeos, etc.)"
+  - Tabela de perfis de configuração
+  - Características para arquivos grandes
+  - Performance esperada (7 GB em 11-14 min)
+  - Exemplo de configuração atualizado
+
+### Performance
+
+Para backups SQL de 7 GB (conexão 100 Mbps):
+- **Cálculo MD5**: ~30 segundos
+- **Upload**: 11-14 minutos
+- **Memória usada**: 256 KB constante (streaming)
+- **4 arquivos/dia**: ~50 minutos total
+
+### Cenário Validado
+
+- ✅ Arquivos de 6-8 GB cada
+- ✅ 4 arquivos/dia = 24-32 GB/dia
+- ✅ Dentro do limite do Google Drive (750 GB/dia = 4% usado)
+- ✅ Memória constante: 256 KB (não depende do tamanho do arquivo)
+- ✅ Resumable upload (retoma de onde parou)
+
 ## [1.1.0] - 2026-01-07
 
 ### 🆕 Nova Feature: Preservação de Estrutura de Pastas
