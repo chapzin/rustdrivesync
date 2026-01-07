@@ -114,6 +114,10 @@ max_concurrent_uploads = 4
 verify_upload = true
 
 # Manter estrutura de pastas no destino
+# - true: preserva hierarquia de diretórios local no Google Drive
+#   Exemplo: projeto/src/main.rs → RustDriveSync/projeto/src/main.rs
+# - false: todos os arquivos ficam na pasta raiz
+#   Exemplo: projeto/src/main.rs → RustDriveSync/main.rs
 preserve_folder_structure = true
 
 # Deletar arquivos no Drive quando deletados localmente

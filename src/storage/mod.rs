@@ -37,6 +37,51 @@ pub trait StorageBackend: Send + Sync {
     /// Informações da pasta (ID, nome, pai)
     async fn ensure_folder(&self, name: &str, parent_id: Option<String>) -> Result<FolderInfo>;
 
+    /// Garante que toda uma hierarquia de pastas existe, criando recursivamente se necessário
+    ///
+    /// # Argumentos
+    /// * `path` - Caminho relativo das pastas (ex: "projeto/subpasta/docs")
+    /// * `root_folder_id` - ID da pasta raiz onde criar a hierarquia
+    ///
+    /// # Retorna
+    /// Informações da pasta final (mais profunda na hierarquia)
+    ///
+    /// # Exemplo
+    /// ```ignore
+    /// // Cria: root/projeto/subpasta/docs
+    /// let folder = backend.ensure_folder_path("projeto/subpasta/docs", root_id).await?;
+    /// // folder.id = ID da pasta "docs"
+    /// ```
+    async fn ensure_folder_path(&self, path: &str, root_folder_id: String) -> Result<FolderInfo> {
+        use std::path::Path;
+
+        let path_obj = Path::new(path);
+        let mut current_parent_id = root_folder_id;
+        let mut last_folder: Option<FolderInfo> = None;
+
+        // Iterar sobre cada componente do caminho
+        for component in path_obj.components() {
+            if let Some(name) = component.as_os_str().to_str() {
+                // Pular componentes vazios ou "."
+                if name.is_empty() || name == "." {
+                    continue;
+                }
+
+                // Criar/garantir que esta pasta existe
+                let folder = self.ensure_folder(name, Some(current_parent_id.clone())).await?;
+
+                // A próxima pasta será filha desta
+                current_parent_id = folder.id.clone();
+                last_folder = Some(folder);
+            }
+        }
+
+        // Retornar a última pasta criada (mais profunda)
+        last_folder.ok_or_else(|| crate::error::RustDriveSyncError::DriveApiError {
+            message: format!("Nenhuma pasta foi criada a partir do caminho: {}", path),
+        })
+    }
+
     /// Lista arquivos em uma pasta
     ///
     /// # Argumentos

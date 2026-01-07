@@ -4,7 +4,7 @@
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![Status](https://img.shields.io/badge/status-production--ready-brightgreen)
 ![Version](https://img.shields.io/badge/version-1.0.0-blue)
-![Tests](https://img.shields.io/badge/tests-113%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-118%20passing-brightgreen)
 ![Coverage](https://img.shields.io/badge/coverage-36.46%25-yellow)
 
 **Sincronização unidirecional de arquivos com Google Drive**
@@ -27,9 +27,10 @@ RustDriveSync é uma ferramenta CLI desenvolvida em Rust para sincronização ef
 - ✅ **Logs detalhados** com níveis configuráveis
 - ✅ **Detecção de mudanças** por hash MD5 incremental
 - ✅ **Detecção automática de MIME types** - suporte a 800+ formatos
+- ✅ **Preservação de estrutura de pastas** - mantém hierarquia de diretórios
 
 ### Qualidade e Arquitetura
-- ✅ **113 testes** (36.46% cobertura total, >70% em módulos críticos)
+- ✅ **118 testes** (36.46% cobertura total, >70% em módulos críticos)
 - ✅ **Documentação completa** - ADRs, C4 diagrams, security docs
 - ✅ **SOLID principles** - Clean architecture
 - ✅ **Zero breaking changes** - Código legado continua funcionando
@@ -240,6 +241,53 @@ rustdrivesync list --remote
 rustdrivesync list --diff
 ```
 
+## 📂 Preservação de Estrutura de Pastas
+
+Por padrão, o RustDriveSync preserva a estrutura de diretórios local no Google Drive.
+
+### Comportamento
+
+**Com `preserve_folder_structure = true` (padrão):**
+
+```
+LOCAL                           GOOGLE DRIVE
+/home/user/Documentos/          RustDriveSync/
+├── projeto/                    ├── projeto/
+│   ├── arquivo1.txt       →    │   ├── arquivo1.txt
+│   └── src/                    │   └── src/
+│       └── main.rs        →    │       └── main.rs
+└── fotos/                      └── fotos/
+    └── foto.jpg           →        └── foto.jpg
+```
+
+**Com `preserve_folder_structure = false` (modo legado):**
+
+```
+LOCAL                           GOOGLE DRIVE
+/home/user/Documentos/          RustDriveSync/
+├── projeto/                    ├── arquivo1.txt
+│   ├── arquivo1.txt       →    ├── main.rs
+│   └── src/                    └── foto.jpg
+│       └── main.rs        →
+└── fotos/
+    └── foto.jpg           →
+```
+
+### Configuração
+
+No arquivo `config.toml`:
+
+```toml
+[sync]
+preserve_folder_structure = true  # Padrão: true
+```
+
+### Performance
+
+- **Cache inteligente**: Pastas criadas são armazenadas em cache para evitar chamadas redundantes à API
+- **Criação recursiva**: Toda a hierarquia é criada automaticamente quando necessário
+- **Thread-safe**: Cache compartilhado com segurança entre uploads paralelos
+
 ## 📚 Documentação
 
 ### Para Usuários
@@ -296,6 +344,7 @@ interval_seconds = 300
 conflict_resolution = "overwrite"
 max_file_size_mb = 100
 chunk_size_mb = 5
+preserve_folder_structure = true  # Mantém hierarquia de pastas (true = preserva, false = todos os arquivos na raiz)
 ```
 
 Veja `config.example.toml` para todas as opções disponíveis.

@@ -102,6 +102,8 @@ pub struct SyncEngine<S: StorageBackend> {
     retry_config: RetryConfig,
     /// Semáforo para controlar uploads concorrentes
     upload_semaphore: Arc<Semaphore>,
+    /// Cache de IDs de pastas para evitar recriar hierarquia (path -> folder_id)
+    folder_cache: Arc<Mutex<std::collections::HashMap<String, String>>>,
 }
 
 impl SyncEngine<DriveStorageBackend> {
@@ -215,6 +217,7 @@ impl<S: StorageBackend + 'static> SyncEngine<S> {
             shutdown: Arc::new(AtomicBool::new(false)),
             retry_config,
             upload_semaphore: Arc::new(Semaphore::new(max_concurrent)),
+            folder_cache: Arc::new(Mutex::new(std::collections::HashMap::new())),
         })
     }
 
@@ -415,6 +418,8 @@ impl<S: StorageBackend + 'static> SyncEngine<S> {
             let retry_config = self.retry_config.clone();
             let semaphore = Arc::clone(&self.upload_semaphore);
             let dry_run = self.dry_run;
+            let preserve_structure = self.config.sync.preserve_folder_structure;
+            let folder_cache = Arc::clone(&self.folder_cache);
 
             // Contadores clonados
             let uploaded = Arc::clone(&uploaded_count);
@@ -432,6 +437,8 @@ impl<S: StorageBackend + 'static> SyncEngine<S> {
                     &state_manager,
                     retry_config,
                     dry_run,
+                    preserve_structure,
+                    &folder_cache,
                 )
                 .await
                 {
@@ -490,6 +497,8 @@ impl<S: StorageBackend + 'static> SyncEngine<S> {
         state_manager: &Arc<Mutex<SyncStateManager>>,
         retry_config: RetryConfig,
         dry_run: bool,
+        preserve_structure: bool,
+        folder_cache: &Arc<Mutex<std::collections::HashMap<String, String>>>,
     ) -> Result<u64> {
         let local_file = change
             .local_file
@@ -508,14 +517,59 @@ impl<S: StorageBackend + 'static> SyncEngine<S> {
             return Ok(local_file.size);
         }
 
-        // Obter folder_id do estado
-        let folder_id = {
+        // Obter folder_id raiz do estado
+        let root_folder_id = {
             let guard = state_manager.lock().await;
             guard.state().drive_folder_id.clone()
         };
 
+        // Determinar pasta de destino baseado em preserve_folder_structure
+        let target_folder_id = if preserve_structure {
+            // Extrair diretório do relative_path
+            use std::path::Path;
+            let rel_path = Path::new(&local_file.relative_path);
+
+            if let Some(parent) = rel_path.parent() {
+                let parent_str = parent.display().to_string();
+
+                // Se não tem diretório pai (arquivo na raiz), usar root_folder_id
+                if parent_str.is_empty() || parent_str == "." {
+                    root_folder_id.clone()
+                } else {
+                    // Verificar cache primeiro
+                    {
+                        let cache = folder_cache.lock().await;
+                        if let Some(cached_id) = cache.get(&parent_str) {
+                            debug!("📂 Usando pasta em cache: {} -> {}", parent_str, cached_id);
+                            cached_id.clone()
+                        } else {
+                            drop(cache); // Release lock antes de criar pastas
+
+                            // Criar hierarquia de pastas
+                            debug!("📂 Criando hierarquia de pastas: {}", parent_str);
+                            let folder_info = storage
+                                .ensure_folder_path(&parent_str, root_folder_id.clone())
+                                .await?;
+
+                            // Adicionar ao cache
+                            let mut cache = folder_cache.lock().await;
+                            cache.insert(parent_str.clone(), folder_info.id.clone());
+                            debug!("📂 Pasta criada e cacheada: {} -> {}", parent_str, folder_info.id);
+
+                            folder_info.id
+                        }
+                    }
+                }
+            } else {
+                root_folder_id.clone()
+            }
+        } else {
+            // Modo flat (comportamento antigo): todos na pasta raiz
+            root_folder_id
+        };
+
         // Configurar opções de upload
-        let upload_options = UploadOptions::with_parent(folder_id);
+        let upload_options = UploadOptions::with_parent(target_folder_id);
 
         // Fazer upload com retry automático
         let file_path = local_file.path.clone();
@@ -625,6 +679,8 @@ impl<S: StorageBackend + 'static> SyncEngine<S> {
             &self.state_manager,
             self.retry_config.clone(),
             self.dry_run,
+            self.config.sync.preserve_folder_structure,
+            &self.folder_cache,
         )
         .await
         {
