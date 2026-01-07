@@ -1,4 +1,35 @@
 # config.toml - Configuração completa do RustDriveSync
+#
+# PERFIS DE CONFIGURAÇÃO RECOMENDADOS:
+#
+# 📄 PERFIL 1: Documentos e Fotos (Arquivos Pequenos)
+#    - max_file_size_mb: 100
+#    - chunk_size_mb: 5
+#    - max_concurrent_uploads: 4-8
+#    - max_attempts: 3
+#
+# 💾 PERFIL 2: Backups Médios (100 MB - 1 GB)
+#    - max_file_size_mb: 1024
+#    - chunk_size_mb: 16
+#    - max_concurrent_uploads: 2-4
+#    - max_attempts: 4
+#
+# 🗄️ PERFIL 3: Backups SQL Grandes (6-8 GB) - CONFIGURAÇÃO ATUAL
+#    - max_file_size_mb: 10240 (10 GB)
+#    - chunk_size_mb: 32
+#    - max_concurrent_uploads: 1-2
+#    - max_attempts: 5
+#    - max_delay_seconds: 120
+#
+# 🎥 PERFIL 4: Vídeos e Arquivos Muito Grandes (> 10 GB)
+#    - max_file_size_mb: 50000 (50 GB)
+#    - chunk_size_mb: 64
+#    - max_concurrent_uploads: 1
+#    - max_attempts: 7
+#    - max_delay_seconds: 180
+#
+# Este arquivo está configurado para o PERFIL 3 (Backups SQL Grandes)
+# Ajuste conforme sua necessidade!
 
 #===============================================================================
 # CONFIGURAÇÕES GERAIS
@@ -102,13 +133,28 @@ interval_seconds = 300
 conflict_resolution = "overwrite"
 
 # Tamanho máximo de arquivo para upload (MB)
-max_file_size_mb = 100
+# IMPORTANTE: Ajuste conforme seu caso de uso
+# - Documentos/Fotos pequenas: 100 (padrão)
+# - Backups médios: 1024 (1 GB)
+# - Backups SQL grandes: 10240 (10 GB)
+# - Vídeos/Arquivos muito grandes: 50000 (50 GB)
+# Limite do Google Drive: 5 TB (5.120.000 MB)
+max_file_size_mb = 10240
 
 # Tamanho do chunk para upload resumível (MB)
-chunk_size_mb = 5
+# IMPORTANTE: Chunks maiores = uploads mais rápidos para arquivos grandes
+# - Arquivos pequenos (< 100 MB): 5 (padrão)
+# - Arquivos médios (100 MB - 1 GB): 16
+# - Arquivos grandes (> 1 GB): 32-64
+# Recomendação para backups SQL: 32
+chunk_size_mb = 32
 
 # Número máximo de uploads simultâneos
-max_concurrent_uploads = 4
+# IMPORTANTE: Arquivos grandes consomem mais banda
+# - Arquivos pequenos: 4-8 (padrão)
+# - Arquivos médios: 2-4
+# - Backups grandes (6-8 GB): 1-2 (evita saturar conexão)
+max_concurrent_uploads = 2
 
 # Verificar integridade após upload (compara MD5)
 verify_upload = true
@@ -129,16 +175,24 @@ delete_remote_on_local_delete = false
 #===============================================================================
 [retry]
 # Número máximo de tentativas por arquivo
-max_attempts = 3
+# IMPORTANTE: Arquivos grandes têm mais chance de timeout
+# - Arquivos pequenos: 3 (padrão)
+# - Backups grandes: 5-7 (recomendado)
+max_attempts = 5
 
 # Delay inicial entre tentativas (segundos)
-initial_delay_seconds = 1
+# IMPORTANTE: Dar mais tempo para recuperação em arquivos grandes
+initial_delay_seconds = 2
 
 # Fator de multiplicação do delay (exponential backoff)
+# 2.0 = dobra o delay a cada tentativa (2s → 4s → 8s → 16s → 32s)
 backoff_multiplier = 2.0
 
 # Delay máximo entre tentativas (segundos)
-max_delay_seconds = 60
+# IMPORTANTE: Aumentar para arquivos grandes (permite mais tempo de recuperação)
+# - Arquivos pequenos: 60
+# - Backups grandes: 120-180
+max_delay_seconds = 120
 
 #===============================================================================
 # NOTIFICAÇÕES (Opcional)

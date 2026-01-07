@@ -288,6 +288,33 @@ preserve_folder_structure = true  # Padrão: true
 - **Criação recursiva**: Toda a hierarquia é criada automaticamente quando necessário
 - **Thread-safe**: Cache compartilhado com segurança entre uploads paralelos
 
+## 🗄️ Backups Grandes (SQL, Vídeos, etc.)
+
+O RustDriveSync foi projetado para lidar com **arquivos muito grandes** (até 5 TB):
+
+### Características para Arquivos Grandes:
+- ✅ **Streaming Upload**: Memória constante (~256 KB) independente do tamanho
+- ✅ **Resumable Upload**: Retoma de onde parou se a conexão cair
+- ✅ **MD5 Streaming**: Calcula hash sem carregar arquivo inteiro na memória
+- ✅ **Chunks configuráveis**: Otimize para seu cenário (5-64 MB)
+- ✅ **Retry robusto**: Até 7 tentativas com backoff exponencial
+
+### Performance Esperada (Arquivo de 7 GB):
+- **Cálculo MD5**: ~30 segundos
+- **Upload** (100 Mbps): ~11-14 minutos
+- **Memória usada**: 256 KB fixo
+- **Limite diário**: 750 GB (Google Drive)
+
+### Configuração Rápida:
+```toml
+[sync]
+max_file_size_mb = 10240  # 10 GB
+chunk_size_mb = 32
+max_concurrent_uploads = 2
+```
+
+Veja `config.large-backups.toml` para configuração completa e detalhada.
+
 ## 📚 Documentação
 
 ### Para Usuários
@@ -321,30 +348,55 @@ cargo doc --open
 
 ## ⚙️ Configuração
 
-Exemplo de `config.toml`:
+### Perfis de Configuração
+
+O RustDriveSync pode ser configurado para diferentes cenários:
+
+| Perfil | Tamanho dos Arquivos | max_file_size_mb | chunk_size_mb | max_concurrent |
+|--------|---------------------|------------------|---------------|----------------|
+| 📄 Documentos | < 100 MB | 100 | 5 | 4-8 |
+| 💾 Backups Médios | 100 MB - 1 GB | 1024 | 16 | 2-4 |
+| 🗄️ **Backups SQL Grandes** | **6-8 GB** | **10240** | **32** | **1-2** |
+| 🎥 Vídeos | > 10 GB | 50000 | 64 | 1 |
+
+**Arquivos de exemplo**:
+- `config.example.toml` - Configuração padrão para backups grandes
+- `config.large-backups.toml` - Configuração otimizada para backups SQL (6-8 GB)
+
+### Exemplo de `config.toml` (Backups Grandes):
 
 ```toml
 [general]
 log_level = "info"
+log_file = "./logs/rustdrivesync.log"  # Monitorar progresso
 
 [source]
-path = "/home/usuario/documentos"
+path = "/var/backups/database"  # Pasta de backups
 recursive = true
-ignore_hidden = true
-ignore_patterns = ["*.tmp", "node_modules/", ".git/"]
+ignore_hidden = false
+ignore_patterns = ["*.tmp", "*.partial"]
 
 [google_drive]
 credentials_file = "./credentials.json"
 token_file = "./token.json"
-target_folder_id = "1ABC123xyz"
+target_folder_id = "1ABC123xyz"  # Ou use target_folder_name = "Backups-SQL"
 
 [sync]
-mode = "watch"
-interval_seconds = 300
+mode = "once"  # Usar com cron/scheduler
 conflict_resolution = "overwrite"
-max_file_size_mb = 100
-chunk_size_mb = 5
-preserve_folder_structure = true  # Mantém hierarquia de pastas (true = preserva, false = todos os arquivos na raiz)
+
+# CONFIGURAÇÃO PARA ARQUIVOS GRANDES (6-8 GB)
+max_file_size_mb = 10240  # 10 GB (crítico!)
+chunk_size_mb = 32         # Chunks maiores = mais eficiente
+max_concurrent_uploads = 2 # Evita saturar conexão
+
+verify_upload = true
+preserve_folder_structure = true
+
+[retry]
+max_attempts = 5          # Mais tentativas para arquivos grandes
+initial_delay_seconds = 2
+max_delay_seconds = 120   # 2 minutos de delay máximo
 ```
 
 Veja `config.example.toml` para todas as opções disponíveis.

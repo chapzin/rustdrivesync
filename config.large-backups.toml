@@ -1,0 +1,196 @@
+# config.large-backups.toml
+# Configuração otimizada para BACKUPS SQL GRANDES (6-8 GB)
+#
+# Caso de uso: Backups diários de bancos de dados (4 arquivos/dia, 6-8 GB cada)
+# Características:
+# - Upload com memória constante (streaming)
+# - Retry robusto para arquivos grandes
+# - Uploads sequenciais para não saturar conexão
+# - Resumable upload (retoma de onde parou)
+
+#===============================================================================
+# CONFIGURAÇÕES GERAIS
+#===============================================================================
+[general]
+# Log detalhado para monitorar progresso de uploads grandes
+log_level = "info"
+
+# IMPORTANTE: Salvar logs para diagnóstico
+log_file = "./logs/rustdrivesync-backups.log"
+
+log_format = "text"
+
+#===============================================================================
+# PASTA DE ORIGEM - BACKUPS
+#===============================================================================
+[source]
+# Pasta onde os backups SQL são gerados
+path = "/var/backups/database"
+
+# Incluir subpastas (se houver backups organizados por data)
+recursive = true
+
+# NÃO ignorar arquivos ocultos (alguns backups podem começar com .)
+ignore_hidden = false
+
+# Não seguir symlinks (evitar duplicatas)
+follow_symlinks = false
+
+# Ignorar apenas arquivos temporários
+ignore_patterns = [
+    "*.tmp",
+    "*.temp",
+    "*.partial",
+    "*.incomplete",
+]
+
+#===============================================================================
+# GOOGLE DRIVE
+#===============================================================================
+[google_drive]
+credentials_file = "./credentials.json"
+token_file = "./token.json"
+
+# RECOMENDAÇÃO: Criar pasta específica para backups
+# target_folder_name = "Backups-SQL"
+# OU usar ID da pasta existente:
+target_folder_id = "1ABC123xyz"
+
+scopes = [
+    "https://www.googleapis.com/auth/drive.file"
+]
+
+#===============================================================================
+# SINCRONIZAÇÃO - OTIMIZADA PARA ARQUIVOS GRANDES
+#===============================================================================
+[sync]
+# Sincronização única (usar com cron/scheduler)
+mode = "once"
+
+# Se usar watch mode, intervalo de 1 hora (backups geralmente são espaçados)
+# interval_seconds = 3600
+
+# SEMPRE sobrescrever (backups mais recentes)
+conflict_resolution = "overwrite"
+
+# CRÍTICO: Suportar arquivos de até 10 GB
+max_file_size_mb = 10240
+
+# OTIMIZADO: Chunks de 32 MB para uploads mais eficientes
+# Reduz overhead de requisições HTTP
+chunk_size_mb = 32
+
+# IMPORTANTE: Apenas 1-2 uploads simultâneos
+# Evita saturar conexão de internet
+# Para backups muito grandes (> 10 GB), use 1
+max_concurrent_uploads = 2
+
+# SEMPRE verificar integridade (crítico para backups)
+verify_upload = true
+
+# Preservar estrutura de pastas
+# Exemplo: backups/2026-01/database1.sql → RustDriveSync/backups/2026-01/database1.sql
+preserve_folder_structure = true
+
+# NÃO deletar no Drive (manter histórico de backups)
+delete_remote_on_local_delete = false
+
+#===============================================================================
+# RETRY - ROBUSTO PARA ARQUIVOS GRANDES
+#===============================================================================
+[retry]
+# Aumentar tentativas (arquivos grandes têm mais chance de timeout)
+max_attempts = 5
+
+# Delay inicial maior (2 segundos)
+initial_delay_seconds = 2
+
+# Exponential backoff: 2s → 4s → 8s → 16s → 32s → 64s → 120s
+backoff_multiplier = 2.0
+
+# Delay máximo de 2 minutos (permite recuperação de problemas de rede)
+max_delay_seconds = 120
+
+#===============================================================================
+# NOTIFICAÇÕES - RECOMENDADO PARA BACKUPS
+#===============================================================================
+[notifications]
+# Habilitar notificações para saber quando backup foi enviado
+enabled = true
+
+# Notificar quando completar
+on_complete = true
+
+# CRÍTICO: Notificar em caso de erro (backup não enviado!)
+on_error = true
+
+# Notificações desktop (Linux/macOS/Windows)
+notification_type = "desktop"
+
+# ALTERNATIVA: Usar webhook (Slack, Discord, etc)
+# notification_type = "webhook"
+# webhook_url = "https://hooks.slack.com/services/YOUR/WEBHOOK/URL"
+
+#===============================================================================
+# ESTADO E CACHE
+#===============================================================================
+[state]
+# Arquivo de estado para rastrear uploads
+state_file = "./state-backups.json"
+
+# Salvar estado frequentemente (a cada arquivo para backups grandes)
+save_interval = 1
+
+# Limpar estado antigo após 90 dias (manter histórico longo)
+cleanup_after_days = 90
+
+#===============================================================================
+# EXEMPLO DE USO
+#===============================================================================
+#
+# 1. Testar configuração (dry-run):
+#    rustdrivesync sync --config config.large-backups.toml --dry-run
+#
+# 2. Upload único:
+#    rustdrivesync sync --config config.large-backups.toml --once
+#
+# 3. Automatizar com cron (Linux - 2h da manhã todos os dias):
+#    0 2 * * * /usr/local/bin/rustdrivesync sync --config /path/to/config.large-backups.toml --once >> /var/log/backup-sync.log 2>&1
+#
+# 4. Monitorar progresso:
+#    tail -f ./logs/rustdrivesync-backups.log
+#
+# 5. Verificar status:
+#    rustdrivesync status --config config.large-backups.toml
+#
+#===============================================================================
+# PERFORMANCE ESPERADA
+#===============================================================================
+#
+# Conexão: 100 Mbps (12.5 MB/s teórico)
+# Velocidade real: ~8-10 MB/s (overhead HTTP/TLS)
+#
+# Arquivo de 7 GB:
+# - Cálculo MD5: ~30 segundos
+# - Upload: ~11-14 minutos
+# - Total: ~12-15 minutos
+#
+# 4 arquivos de 7 GB (uploads sequenciais com max_concurrent=2):
+# - Tempo total: ~50-60 minutos
+#
+# Memória usada: ~256 KB constante (streaming)
+#
+#===============================================================================
+# OTIMIZAÇÃO OPCIONAL: COMPRESSÃO
+#===============================================================================
+#
+# Para reduzir tempo de upload, comprimir antes:
+#
+# gzip -9 /var/backups/database/*.sql
+# # Reduz tamanho em 70-90%
+# # 7 GB → ~1 GB
+# # Upload: 14 min → 2 min
+#
+# IMPORTANTE: Atualizar ignore_patterns para não ignorar .gz
+# E ajustar scripts de backup para gerar arquivos comprimidos
+#
