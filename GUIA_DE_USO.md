@@ -12,11 +12,18 @@ Antes de começar, você precisa:
    ```
 
 2. ✅ **Credenciais do Google Drive API**
-   - Acesse o [Google Cloud Console](https://console.cloud.google.com/)
-   - Crie um projeto
+
+   **📖 [Guia Completo Passo a Passo no README](README.md#1-obter-credenciais-do-google-cloud-console)**
+
+   Resumo rápido:
+   - Acesse https://console.cloud.google.com
+   - Crie um projeto no Google Cloud
    - Habilite a Google Drive API
-   - Crie credenciais OAuth 2.0 (Desktop App)
+   - Configure OAuth Consent Screen (obrigatório!)
+   - Crie credenciais OAuth 2.0 tipo "Desktop App"
    - Baixe o arquivo `credentials.json`
+
+   ⚠️ **Importante**: Siga o guia detalhado no README para evitar erros comuns!
 
 3. ✅ **Conexão com internet**
 

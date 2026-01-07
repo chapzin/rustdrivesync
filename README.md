@@ -59,13 +59,121 @@ O binário estará em `target/release/rustdrivesync`
 
 ## 🔧 Configuração Inicial
 
-### 1. Obter Credenciais do Google
+### 1. Obter Credenciais do Google Cloud Console
 
-1. Acesse o [Google Cloud Console](https://console.cloud.google.com)
-2. Crie um novo projeto (ou use um existente)
-3. Habilite a **Google Drive API**
-4. Crie credenciais OAuth 2.0 (Desktop App)
-5. Baixe o arquivo `credentials.json`
+Para usar o RustDriveSync, você precisa de credenciais OAuth 2.0 do Google. Siga este guia passo a passo:
+
+#### Passo 1: Criar um Projeto no Google Cloud
+
+1. **Acesse o Google Cloud Console**
+   - URL: https://console.cloud.google.com
+   - Faça login com sua conta Google
+
+2. **Criar Novo Projeto**
+   - Clique no seletor de projeto no topo (ao lado de "Google Cloud")
+   - Clique em **"New Project"** (Novo Projeto)
+   - Digite um nome: ex: "RustDriveSync" ou "My Drive Backup"
+   - Clique em **"Create"** (Criar)
+   - Aguarde alguns segundos até o projeto ser criado
+   - Selecione o projeto criado no seletor de projetos
+
+#### Passo 2: Habilitar a Google Drive API
+
+1. **Acessar a API Library**
+   - No menu lateral (☰), vá em: **"APIs & Services"** → **"Library"**
+   - Ou acesse diretamente: https://console.cloud.google.com/apis/library
+
+2. **Buscar e Habilitar**
+   - Na barra de busca, digite: `Google Drive API`
+   - Clique em **"Google Drive API"** nos resultados
+   - Clique no botão azul **"Enable"** (Habilitar)
+   - Aguarde a ativação (geralmente instantânea)
+
+#### Passo 3: Configurar Tela de Consentimento OAuth
+
+⚠️ **Obrigatório antes de criar credenciais**
+
+1. **Acessar OAuth Consent Screen**
+   - No menu lateral: **"APIs & Services"** → **"OAuth consent screen"**
+   - Ou: https://console.cloud.google.com/apis/credentials/consent
+
+2. **Configurar Tipo de Usuário**
+   - Selecione **"External"** (para uso pessoal)
+   - Clique em **"Create"** (Criar)
+
+3. **Preencher Informações Obrigatórias**
+   - **App name**: "RustDriveSync" (ou seu nome preferido)
+   - **User support email**: Seu email
+   - **Developer contact email**: Seu email
+   - Clique em **"Save and Continue"** (Salvar e Continuar)
+
+4. **Escopos (Scopes)**
+   - Clique em **"Add or Remove Scopes"**
+   - Busque e selecione: `https://www.googleapis.com/auth/drive.file`
+   - Clique em **"Update"** e depois **"Save and Continue"**
+
+5. **Test Users (Usuários de Teste)**
+   - Clique em **"Add Users"**
+   - Adicione seu email (o que você usará para sincronizar)
+   - Clique em **"Add"** e depois **"Save and Continue"**
+
+6. **Revisar e Confirmar**
+   - Clique em **"Back to Dashboard"**
+
+#### Passo 4: Criar Credenciais OAuth 2.0
+
+1. **Acessar Credentials**
+   - No menu lateral: **"APIs & Services"** → **"Credentials"**
+   - Ou: https://console.cloud.google.com/apis/credentials
+
+2. **Criar Nova Credencial**
+   - Clique no botão **"+ Create Credentials"** no topo
+   - Selecione **"OAuth client ID"**
+
+3. **Configurar Tipo de Aplicação**
+   - **Application type**: Selecione **"Desktop app"**
+   - **Name**: "RustDriveSync CLI" (ou qualquer nome)
+   - Clique em **"Create"**
+
+4. **Baixar Credenciais**
+   - Uma janela popup aparecerá com "OAuth client created"
+   - Clique em **"Download JSON"** (ícone de download ⬇️)
+   - O arquivo será baixado como `client_secret_XXXXX.json`
+   - **Renomeie** este arquivo para `credentials.json`
+   - **Mova** para uma pasta segura (ex: `~/.config/rustdrivesync/`)
+
+#### Passo 5: Proteger Suas Credenciais
+
+```bash
+# Linux/macOS
+mkdir -p ~/.config/rustdrivesync
+mv ~/Downloads/client_secret_*.json ~/.config/rustdrivesync/credentials.json
+chmod 600 ~/.config/rustdrivesync/credentials.json
+
+# Windows (PowerShell)
+New-Item -Path "$env:APPDATA\rustdrivesync" -ItemType Directory -Force
+Move-Item "$env:USERPROFILE\Downloads\client_secret_*.json" "$env:APPDATA\rustdrivesync\credentials.json"
+```
+
+✅ **Pronto!** Você agora tem o arquivo `credentials.json` necessário.
+
+---
+
+### ⚠️ Troubleshooting
+
+**Erro: "Access blocked: This app's request is invalid"**
+- Certifique-se de configurar a OAuth Consent Screen (Passo 3)
+- Adicione seu email como Test User
+
+**Erro: "The OAuth client was not found"**
+- Verifique se criou credenciais do tipo "Desktop app"
+- Não use "Web application" ou "Service account"
+
+**Arquivo credentials.json não baixa**
+- Vá em Credentials → Clique no nome da credencial criada
+- Clique no ícone de download (⬇️) no lado direito
+
+---
 
 ### 2. Criar Configuração
 
