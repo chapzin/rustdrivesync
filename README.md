@@ -3,7 +3,7 @@
 ![Rust](https://img.shields.io/badge/rust-1.70%2B-orange)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![Status](https://img.shields.io/badge/status-production--ready-brightgreen)
-![Version](https://img.shields.io/badge/version-1.0.0-blue)
+![Version](https://img.shields.io/badge/version-1.1.0-blue)
 ![Tests](https://img.shields.io/badge/tests-118%20passing-brightgreen)
 ![Coverage](https://img.shields.io/badge/coverage-36.46%25-yellow)
 

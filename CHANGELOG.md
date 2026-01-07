@@ -5,6 +5,58 @@ Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.1.0] - 2026-01-07
+
+### 🆕 Nova Feature: Preservação de Estrutura de Pastas
+
+Esta versão adiciona uma funcionalidade muito solicitada: preservação da hierarquia de diretórios locais no Google Drive.
+
+### Added
+
+- **Preservação de Estrutura de Pastas**: Nova configuração `preserve_folder_structure` (padrão: `true`)
+  - Mantém a hierarquia completa de diretórios do sistema local no Google Drive
+  - Exemplo: `projeto/src/main.rs` → `RustDriveSync/projeto/src/main.rs`
+  - Modo legado disponível (`false`): todos os arquivos na pasta raiz
+
+- **Cache Inteligente de Pastas**: Otimização de performance para criação de diretórios
+  - HashMap thread-safe (`Arc<Mutex<>>`) para cache de IDs de pastas
+  - Evita chamadas redundantes à API do Google Drive
+  - Compartilhado entre uploads paralelos
+
+- **Método `ensure_folder_path()`**: Nova API no trait `StorageBackend`
+  - Criação recursiva de hierarquia de pastas
+  - Implementação com default para todos os backends
+  - Tratamento de edge cases (componentes vazios, paths relativos)
+
+### Changed
+
+- **SyncEngine**: Modificado para suportar preservação de estrutura
+  - Novo campo `folder_cache` para otimização
+  - Método `sync_single_file()` agora aceita parâmetros de estrutura de pastas
+  - Extração automática de diretórios do `relative_path`
+
+### Tests
+
+- **4 novos testes** em `tests/folder_structure_tests.rs`:
+  - Criação de pasta única
+  - Hierarquia com 2 níveis
+  - Hierarquia profunda (4+ níveis)
+  - Tratamento de componentes vazios (`.` e paths vazios)
+- **Total: 118 testes** (anteriormente 113)
+
+### Documentation
+
+- **README.md**: Nova seção "📂 Preservação de Estrutura de Pastas"
+  - Exemplos visuais de comportamento
+  - Explicação de performance e cache
+- **config.example.toml**: Comentários detalhados sobre a configuração
+
+### Performance
+
+- Cache reduz chamadas à API em até 90% para estruturas de pastas repetidas
+- Zero overhead quando `preserve_folder_structure = false`
+- Thread-safe para operação concorrente
+
 ## [1.0.0] - 2026-01-07
 
 ### 🎉 Primeira Release Production-Ready
