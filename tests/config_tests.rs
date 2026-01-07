@@ -1,4 +1,4 @@
-use rustdrivesync::config::{load_config, validate_config};
+use rustdrivesync::config::load_config;
 use std::fs;
 use tempfile::TempDir;
 

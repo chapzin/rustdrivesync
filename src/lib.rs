@@ -6,9 +6,11 @@ pub mod core;
 pub mod error;
 pub mod google_drive;
 pub mod logging;
+pub mod storage;
 pub mod sync;
 pub mod watcher;
 
 // Re-exports públicos
 pub use config::Config;
 pub use error::{Result, RustDriveSyncError};
+pub use storage::StorageBackend;
